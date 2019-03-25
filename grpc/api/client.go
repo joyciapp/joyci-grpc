@@ -28,8 +28,17 @@ func newContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), 15*time.Second)
 }
 
+// NewGitCloneRequest initializes a new GitCloneRequest
+func NewGitCloneRequest(applicationName string, jobDir string, repository string) *pb.GitCloneRequest {
+	return &pb.GitCloneRequest{
+		ApplicationName: applicationName,
+		JobDir:          jobDir,
+		Repository:      repository,
+	}
+}
+
 // GitClone clones a git repository
-func GitClone(repository string) {
+func GitClone(applicationName string, jobDir string, repository string) {
 	conn := connect(address)
 	defer conn.Close()
 
@@ -42,14 +51,24 @@ func GitClone(repository string) {
 		log.Fatal("error context:", err)
 	}
 
-	_, err := c.GitClone(ctx, &pb.GitCloneRequest{Repository: repository})
+	request := NewGitCloneRequest(applicationName, jobDir, repository)
+	_, err := c.GitClone(ctx, request)
 	if err != nil {
 		log.Fatal("error on clone a repository:", err)
 	}
 }
 
+// NewExecuteCommandsRequest initializes a new ExecuteCommandsRequest
+func NewExecuteCommandsRequest(applicationName string, jobDir string, commands ...string) *pb.ExecuteCommandsRequest {
+	return &pb.ExecuteCommandsRequest{
+		ApplicationName: applicationName,
+		JobDir:          jobDir,
+		Commands:        commands,
+	}
+}
+
 // ExecuteCommands execute bash commands
-func ExecuteCommands(commands ...string) {
+func ExecuteCommands(applicationName string, jobDir string, commands ...string) {
 	conn := connect(address)
 	defer conn.Close()
 
@@ -62,7 +81,8 @@ func ExecuteCommands(commands ...string) {
 		log.Fatal("error context:", err)
 	}
 
-	_, err := c.ExecuteCommands(ctx, &pb.ExecuteCommandsRequest{Commands: commands})
+	request := NewExecuteCommandsRequest(applicationName, jobDir, commands...)
+	_, err := c.ExecuteCommands(ctx, request)
 	if err != nil {
 		log.Fatal("error on execute commands:", err)
 	}

@@ -10,9 +10,13 @@ service JoyciCore {
 }
 
 message GitCloneRequest {
-    string repository = 1;
+    string applicationName = 1;
+    string jobDir = 2;
+    string repository = 3;
 }
 
 message ExecuteCommandsRequest {
-    repeated string commands = 1;
+    string applicationName = 1;
+    string jobDir = 2;
+    repeated string commands = 3;
 }

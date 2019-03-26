@@ -2,14 +2,40 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"os"
 	"time"
 
 	pb "github.com/joyciapp/joyci-grpc/grpc/proto"
 	"google.golang.org/grpc"
 )
 
-const address = "localhost:50051"
+const (
+	defaultServerHost = "localhost"
+	defaultServerPort = "50051"
+	serverHostEnvKey  = "SERVER_HOST"
+)
+
+// ServerConnectionString returns a Server Connection String
+func ServerConnectionString() string {
+	host := os.Getenv(serverHostEnvKey)
+	port := os.Getenv(serverPortEnvKey)
+
+	if host != "" && port != "" {
+		return fmt.Sprintf("%s:%s", host, port)
+	}
+
+	if host != "" && port == "" {
+		return fmt.Sprintf("%s:%s", host, defaultServerPort)
+	}
+
+	if host == "" && port != "" {
+		return fmt.Sprintf("%s:%s", defaultServerHost, port)
+	}
+
+	return fmt.Sprintf("%s:%s", defaultServerHost, defaultServerPort)
+}
 
 func connect(address string) *grpc.ClientConn {
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
@@ -39,7 +65,8 @@ func NewGitCloneRequest(applicationName string, jobDir string, repository string
 
 // GitClone clones a git repository
 func GitClone(applicationName string, jobDir string, repository string) {
-	conn := connect(address)
+	connectionAddress := ServerConnectionString()
+	conn := connect(connectionAddress)
 	defer conn.Close()
 
 	c := newClient(conn)
@@ -69,7 +96,8 @@ func NewExecuteCommandsRequest(applicationName string, jobDir string, commands .
 
 // ExecuteCommands execute bash commands
 func ExecuteCommands(applicationName string, jobDir string, commands ...string) {
-	conn := connect(address)
+	connectionAddress := ServerConnectionString()
+	conn := connect(connectionAddress)
 	defer conn.Close()
 
 	c := newClient(conn)

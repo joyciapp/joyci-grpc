@@ -2,8 +2,10 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
+	"os"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/joyciapp/joyci-core/cmd/bash"
@@ -12,7 +14,10 @@ import (
 	"google.golang.org/grpc"
 )
 
-const port = ":50051"
+const (
+	defaultPort      = ":50051"
+	serverPortEnvKey = "SERVER_PORT"
+)
 
 // Server structs representing the GRPC Api server
 type Server struct{}
@@ -34,16 +39,26 @@ func (s *Server) ExecuteCommands(ctx context.Context, request *pb.ExecuteCommand
 	return new(empty.Empty), nil
 }
 
+// GetServerListenPort fetch port to be used on server start up
+func GetServerListenPort() string {
+	if port := os.Getenv(serverPortEnvKey); port != "" {
+		return fmt.Sprintf(":%s", port)
+	}
+
+	return defaultPort
+}
+
 // Serve start grpc server
 func Serve() {
-	lis, err := net.Listen("tcp", port)
+	listenPort := GetServerListenPort()
+	lis, err := net.Listen("tcp", listenPort)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
 	pb.RegisterJoyciCoreServer(s, &Server{})
 
-	log.Println("JoyCI GRPC server started at ", port)
+	log.Println("JoyCI GRPC server started at ", listenPort)
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
